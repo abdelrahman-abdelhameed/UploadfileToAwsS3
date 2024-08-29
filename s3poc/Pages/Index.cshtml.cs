@@ -22,15 +22,52 @@ namespace s3poc.Pages
             _logger = logger;
         }
 
-        public void OnGet()
-        {
-        }
-
+        
         [BindProperty] public IFormFile File { get; set; }
         
         const string bucketName = "";
-         private const string s3Key = "";
-         private const string s3Secret = "";
+        private const string s3Key = "";
+        private const string s3Secret = "";
+        
+        
+        public async Task<IActionResult> OnGet()
+        {
+            
+             
+                try
+                {
+                    var request = new GetObjectRequest
+                    {
+                        BucketName = bucketName, // Bucket Name
+                        Key = "" // your file key
+                    };
+
+                    var _s3Client = new AmazonS3Client(s3Key, s3Secret, RegionEndpoint.USEast1);
+                    using (var response = await _s3Client.GetObjectAsync(request))
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await response.ResponseStream.CopyToAsync(memoryStream);
+                        Console.WriteLine("File downloaded to memory.");
+                        byte [] data = memoryStream.ToArray(); // Return the file as a byte array
+                        
+                        return File(data, "application/pdf", "downloaded.pdf");
+                    }
+                }
+                catch (AmazonS3Exception e)
+                {
+                    Console.WriteLine($"Error encountered on server. Message:'{e.Message}' when writing an object");
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Unknown error encountered on server. Message:'{e.Message}' when writing an object");
+                    throw;
+                }
+            
+
+        }
+
+      
 
         public async Task OnPostAsync()
         {
